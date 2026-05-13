@@ -1,0 +1,7 @@
+results/
+testdata/*.vcf.gz
+*.bam
+*.cram
+__pycache__/
+*.pyc
+.DS_Store
