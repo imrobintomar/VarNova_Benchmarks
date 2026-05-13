@@ -3,11 +3,11 @@
 Reproducible benchmarks comparing **VarNova** against ANNOVAR, VEP, and SnpEff for genomic variant annotation.
 
 > **Paper:** VarNova: a high-performance Rust-based genomic variant annotator *(in preparation)*  
-> **VarNova:** https://github.com/imrobintomar/varnova
+> **Download VarNova binary:** [Releases →](https://github.com/imrobintomar/VarNova_Benchmarks/releases/latest)
 
 ---
 
-## Results (on 48-core server, 62 GB RAM, NVMe + HDD)
+## Results (48-core server, 62 GB RAM, NVMe + HDD)
 
 ### Tier 1 — Gene Annotation Only
 
@@ -29,7 +29,7 @@ Reproducible benchmarks comparing **VarNova** against ANNOVAR, VEP, and SnpEff f
 
 **Input:** 89,052 variants (GATK HaplotypeCaller, exome, hg38)  
 **Databases:** gnomAD 4.1 exome (18 GB) + ClinVar 2024 (1 GB) + dbSNP 151 (29 GB)  
-VarNova used `.vnidx` binary databases on NVMe. ANNOVAR used ANNOVAR flat `.txt` files on HDD.
+VarNova used `.vnidx` binary databases on NVMe. ANNOVAR/VEP/SnpEff used standard formats on HDD.
 
 ---
 
@@ -43,53 +43,54 @@ VarNova used `.vnidx` binary databases on NVMe. ANNOVAR used ANNOVAR flat `.txt`
 | ANNOVAR | 2020+ | ANNOVAR comparison |
 | VEP | ≥ 110 | VEP comparison |
 | SnpEff | ≥ 5.0 | SnpEff comparison |
-| GNU time | any | Timing measurements |
-| bcftools | any | (optional) VCF sort |
+| GNU time | any | Timing |
+| Python 3 | ≥ 3.8 | Test VCF generation |
 
-### Quick start (VarNova only)
+### Quick start (VarNova only, 5 minutes)
 
 ```bash
-# Clone benchmark repo
+# 1. Clone benchmark repo
 git clone https://github.com/imrobintomar/VarNova_Benchmarks.git
 cd VarNova_Benchmarks
 
-# Install VarNova
-wget https://github.com/imrobintomar/varnova/releases/latest/download/varnova-linux-x86_64.tar.gz
+# 2. Download VarNova binary (Linux x86_64)
+wget https://github.com/imrobintomar/VarNova_Benchmarks/releases/latest/download/varnova-linux-x86_64.tar.gz
 tar -xzf varnova-linux-x86_64.tar.gz
-mv varnova ~/.local/bin/
+mv varnova ~/.local/bin/ && chmod +x ~/.local/bin/varnova
+export PATH="$HOME/.local/bin:$PATH"
+varnova --version
 
-# Generate a test VCF (1000 synthetic variants)
+# 3. Generate test VCF (1000 synthetic variants — no real data needed)
 python3 scripts/generate_test_vcf.py --output testdata/test.vcf --variants 1000
 
-# Edit config to set your database paths
+# 4. Edit config.sh — set DB= to your humandb/ directory
 cp config.sh my_config.sh
-# Edit my_config.sh: set DB=, ANNOVAR_DIR=, etc.
+# nano my_config.sh
 
-# Run benchmark
+# 5. Run (VarNova only if ANNOVAR/VEP/SnpEff not installed)
 bash scripts/run_benchmark.sh my_config.sh
 ```
 
 ### Full benchmark (all 4 tools)
 
 ```bash
-# 1. Setup all tools (installs VEP via conda, checks SnpEff)
+# Install all tools
 bash scripts/setup.sh
 
-# 2. Download databases (required for ANNOVAR/VEP/SnpEff comparison)
-#    Skip if you only want to benchmark VarNova
+# Download annotation databases (~60 GB)
+# Edit config.sh first, then:
 perl annovar/annotate_variation.pl --downdb refGene humandb/ --buildver hg38
 perl annovar/annotate_variation.pl --downdb gnomad41_exome humandb/ --buildver hg38
 perl annovar/annotate_variation.pl --downdb clinvar_20240730 humandb/ --buildver hg38
 perl annovar/annotate_variation.pl --downdb avsnp151 humandb/ --buildver hg38
 
-# 3. (Optional) Convert to VarNova binary format for max speed
+# (Optional) Convert to VarNova binary format for maximum speed
 mkdir -p ~/varnova_db
 varnova convert humandb/hg38_gnomad41_exome.txt --out-dir ~/varnova_db/
 varnova convert humandb/hg38_clinvar_20240730.txt --out-dir ~/varnova_db/
 varnova convert humandb/hg38_avsnp151.txt --out-dir ~/varnova_db/
 
-# 4. Edit config.sh with your paths
-# 5. Run
+# Run full benchmark
 bash scripts/run_benchmark.sh
 ```
 
@@ -97,46 +98,21 @@ bash scripts/run_benchmark.sh
 
 ```
 results/YYYYMMDD_HHMMSS/
-├── benchmark_report.txt    ← full log with timing
+├── benchmark_report.txt    ← full timing log
 ├── results.csv             ← machine-readable results
-├── varnova_gene.tsv        ← VarNova gene annotation output
-├── varnova_full/           ← VarNova full pipeline output
-│   └── *.annotated.tsv
-├── annovar_gene.*          ← ANNOVAR gene output
-├── annovar_full.*          ← ANNOVAR full output
-├── vep_gene.vcf            ← VEP gene output
-├── vep_full.vcf            ← VEP full output
-└── snpeff_*.vcf            ← SnpEff output
+├── varnova_gene.tsv        ← VarNova gene annotation
+├── *.annotated.tsv         ← VarNova full pipeline output
+├── annovar_gene.*
+├── annovar_full.*
+├── vep_*.vcf
+└── snpeff_*.vcf
 ```
 
 ---
 
-## Reproducing the Published Results
+## What VarNova output includes
 
-The exact benchmark used in the paper:
-
-- **Machine:** 48-core AMD EPYC, 62 GB RAM, 7.3 TB HDD (82 MB/s) + 3.7 TB NVMe
-- **Input:** `testdata/SRR36790057_exome_hg38.vcf` (89,052 GATK variants)
-- **VarNova databases:** `.vnidx` format on NVMe (`~/varnova_db/`)
-- **Other tools:** databases on HDD (standard setup)
-- **OS:** Ubuntu 22.04, kernel 6.8.0
-
-```bash
-# Exact command used for VarNova (as in paper)
-varnova table \
-  -i SRR36790057_exome_hg38.vcf \
-  --gene-db humandb/hg38_refGene.txt \
-  --filter-db hg38_gnomad41_exome.txt,hg38_clinvar_20240730.txt,hg38_avsnp151.txt \
-  --cache-dir ~/varnova_db/ \
-  --out-dir results/ \
-  --threads 48 -v
-```
-
----
-
-## What VarNova output includes (beyond speed)
-
-Every annotated variant automatically gets:
+Every variant automatically gets standard ANNOVAR-compatible columns **plus** gene-disease context:
 
 ```
 Func.refGene | Gene.refGene | ExonicFunc.refGene | AAChange.refGene
@@ -147,31 +123,53 @@ HPO_Disease_Count | Disease_Names | PanelApp_Panels
 Example for a BRCA1 variant:
 ```
 exonic | BRCA1 | nonsynonymous SNV | BRCA1:NM_007294:exon10:c.981A>T:p.Lys327Asn
-Definitive | Definitive | AD | 113705 | 84 | Breast-ovarian cancer, familial 1;... | Hereditary BRCA(Green)
+Definitive | Definitive | AD | 113705 | 84 | Breast-ovarian cancer;... | Hereditary BRCA(Green)
+```
+
+---
+
+## Reproducing the Published Results
+
+The exact hardware and commands used:
+
+- **Machine:** 48-core CPU, 62 GB RAM, 7.3 TB HDD (82 MB/s) + 3.7 TB NVMe
+- **OS:** Ubuntu 22.04, kernel 6.8.0
+- **VarNova databases:** `.vnidx` on NVMe (`~/varnova_db/`)
+- **ANNOVAR/VEP/SnpEff databases:** standard format on HDD
+
+```bash
+# VarNova (as benchmarked)
+varnova table \
+  -i sample_89052variants_hg38.vcf \
+  --gene-db humandb/hg38_refGene.txt \
+  --filter-db hg38_gnomad41_exome.txt,hg38_clinvar_20240730.txt,hg38_avsnp151.txt \
+  --cache-dir ~/varnova_db/ \
+  --out-dir results/ \
+  --threads 48 -v
 ```
 
 ---
 
 ## Differences from Other Benchmarks
 
-This benchmark is designed to be fair:
+This benchmark is designed to be **fair and reproducible**:
 
-1. **Same databases** — all tools use gnomAD 4.1 exome + ClinVar 2024 + dbSNP 151
-2. **Same input** — identical VCF file
-3. **Same hardware** — all tools on same machine in same session
-4. **Cold cache** — first run timing (no warm OS page cache advantage)
-5. **Output verification** — variant counts compared across tools
+1. **Same databases** — all tools use identical data (gnomAD 4.1 + ClinVar 2024 + dbSNP 151)
+2. **Same input VCF** — identical variants for all tools
+3. **Same hardware** — all tools run on the same machine in the same session
+4. **Cold cache** — first-run timing (OS page cache flushed between runs)
+5. **Output verification** — variant counts verified across tools (VarNova = ANNOVAR = 90,188)
 
 ---
 
-## Contributing
+## Contributing Your Results
 
-If you run this benchmark on your hardware, please open a PR with your results:
+Run the benchmark on your hardware and share results:
 
 1. Fork this repo
 2. Run `bash scripts/run_benchmark.sh`
-3. Copy `results/*/results.csv` to `community_results/your_machine_name.csv`
-4. Add machine specs to `community_results/README.md`
+3. Copy `results/*/results.csv` → `community_results/<machine_name>.csv`
+4. Add specs to `community_results/README.md`
 5. Open a PR
 
 ---
@@ -180,11 +178,10 @@ If you run this benchmark on your hardware, please open a PR with your results:
 
 ```bibtex
 @article{varnova2026,
-  title={VarNova: a high-performance Rust-based genomic variant annotator},
-  author={Robin Tomar},
-  journal={},
-  year={2026},
-  note={manuscript in preparation}
+  title   = {VarNova: a high-performance genomic variant annotator},
+  author  = {Robin Tomar},
+  year    = {2026},
+  note    = {manuscript in preparation}
 }
 ```
 

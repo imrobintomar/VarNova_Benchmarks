@@ -19,11 +19,11 @@ mkdir -p "$DB_DIR" "$TOOLS_DIR"
 # ── 1. Install VarNova ────────────────────────────────────────────────────────
 log "Installing VarNova..."
 if ! command -v varnova &>/dev/null; then
-    ARCH=$(uname -m)
-    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-    URL="https://github.com/imrobintomar/varnova/releases/latest/download/varnova-${OS}-${ARCH}.tar.gz"
+    URL="https://github.com/imrobintomar/VarNova_Benchmarks/releases/latest/download/varnova-linux-x86_64.tar.gz"
+    log "Downloading VarNova from $URL"
     wget -q --show-progress -O /tmp/varnova.tar.gz "$URL" || \
-        die "Cannot download VarNova binary. Build from source: https://github.com/imrobintomar/varnova"
+        die "Download failed. Get the binary from: https://github.com/imrobintomar/VarNova_Benchmarks/releases"
+    mkdir -p ~/.local/bin
     tar -xzf /tmp/varnova.tar.gz -C ~/.local/bin/ && chmod +x ~/.local/bin/varnova
     export PATH="$HOME/.local/bin:$PATH"
 fi
