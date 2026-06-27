@@ -33,6 +33,99 @@ VarNova used `.vnidx` binary databases on NVMe. ANNOVAR/VEP/SnpEff used standard
 
 ---
 
+### Tier 3 — Scalability
+
+**(a) Thread scaling** (1M synthetic variants, reference 48-core machine):
+
+| Threads | Variants/sec | Speedup | Efficiency |
+|---|---|---|---|
+| 1 | 6,142 | 1.00× | 100.0% |
+| 4 | 23,752 | 3.86× | 96.5% |
+| 16 | 55,248 | 8.99× | 56.1% |
+| 48 | 72,992 | 11.88× | 24.7% |
+
+Efficiency drops sharply past 16 threads — shown here in full, not hidden, since
+it's a real property of the current implementation, not a benchmarking artifact.
+Full curve: [`results/scalability_results.csv`](results/scalability_results.csv).
+
+**(b) Variant-count scaling** (48 threads, gene-only annotation):
+
+| Variants | Wall Time | Variants/sec | Peak RAM |
+|---|---|---|---|
+| 1,000,000 | 19.9 s | 50,251 | 680 MB |
+| 10,000,000 | 136.5 s | 73,260 | 2.4 GB |
+| 50,000,000 | 694.3 s | 72,014 | 11.3 GB |
+| 100,000,000 | 1,379.8 s (23 min) | 72,474 | 21.8 GB |
+
+For comparison, on the same 1M-variant input: ANNOVAR 7,751 v/s, SnpEff 14,471 v/s,
+VEP 1,880 v/s. Full data: [`results/cohort_scale_results.csv`](results/cohort_scale_results.csv).
+
+Run it: `bash scripts/scalability_benchmark.sh my_config.sh`
+
+---
+
+### Tier 4 — GIAB multi-sample stability
+
+Re-runs the Tier 1 concordance comparison independently on all seven NIST Genome
+in a Bottle reference samples (HG001–HG007), to show the numbers above aren't a
+one-sample artifact:
+
+| Sample | Variants | Func % | Gene % | ExonicFunc % | AAChange % |
+|---|---|---|---|---|---|
+| HG001 | 3,893,341 | 99.802 | 98.587 | 99.979 | 98.810 |
+| HG002 | 4,518,208 | 99.432 | 98.191 | 99.604 | 98.586 |
+| HG003 | 4,000,097 | 99.809 | 98.472 | 99.980 | 98.598 |
+| HG004 | 4,031,346 | 99.799 | 98.459 | 99.977 | 98.630 |
+| HG005 | 3,856,856 | 99.800 | 98.559 | 99.973 | 98.785 |
+| HG006 | 3,839,315 | 99.810 | 98.593 | 99.973 | 98.758 |
+| HG007 | 3,859,704 | 99.801 | 98.565 | 99.985 | 98.884 |
+
+Full data: [`results/giab_multisample_results.csv`](results/giab_multisample_results.csv).
+Run it: `bash scripts/giab_benchmark.sh my_config.sh` — downloads the official NIST GIAB
+v4.2.1 GRCh38 benchmark VCFs automatically (verify the FTP subpaths in the script
+against the live listing first; NIST periodically revises release layouts).
+
+---
+
+### Tier 5 — ClinVar gold-standard HGVS accuracy
+
+Compares VarNova's Gene/HGVS.c/HGVS.p calls against ClinVar's **own curated fields**
+(not another annotator's output) for 95,599 Pathogenic/Likely_pathogenic,
+high-confidence-review-status variants:
+
+| Metric | Result |
+|---|---|
+| Gene accuracy | 99.563% (95,181/95,599) |
+| HGVS.c accuracy | 91.432% (87,408/95,599) |
+| HGVS.p accuracy | 71.170% |
+| Transcript selection (same transcript ClinVar's submitter used) | 97.270% (92,989/95,599) |
+
+This is the strongest external-reference validation in this repo — see
+[`ACMG_VALIDATION_FINDINGS.md`](ACMG_VALIDATION_FINDINGS.md) §8 for the known
+disagreement categories (dup-vs-ins notation, intronic `p..` handling, complex
+delins cases) before citing this number without context.
+
+Run it: `bash scripts/clinvar_gold_benchmark.sh my_config.sh` (gold set ships in
+`testdata/clinvar_gold/` — no download needed).
+
+---
+
+### Tier 6 — ACMG/AMP classification validation
+
+VarNova implements ACMG/AMP classification using the Tavtigian et al. 2018/2020
+points-based combining method (ClinGen SVI's current standard), not the static
+2015 categorical table. Validation here is **not** a single agreement percentage
+against another tool — see [`ACMG_VALIDATION_FINDINGS.md`](ACMG_VALIDATION_FINDINGS.md)
+for the full writeup, including:
+- Per-criterion rule-correctness and internal logical-consistency tests (68 passing).
+- A two-sided comparison against InterVar: where VarNova's combining arithmetic is
+  demonstrably more current (PM2 evidence strength — backed by an audit showing
+  100% of InterVar's PVS1-driven Pathogenic calls rely on pre-2018 Moderate-tier
+  PM2 weighting), and where InterVar implements more of the full criteria set
+  (PM1, PS4, BS2) than VarNova currently does.
+
+---
+
 ## Run It Yourself
 
 ### Requirements
