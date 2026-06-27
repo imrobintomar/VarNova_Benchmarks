@@ -9,23 +9,23 @@ Reproducible benchmarks comparing **VarNova** against ANNOVAR, VEP, and SnpEff f
 
 ## Results (48-core server, 62 GB RAM, NVMe + HDD)
 
-### Tier 1 — Gene Annotation Only
+### Tier 1 - Gene Annotation Only
 
 | Tool | Wall Time | Speed | vs VarNova |
 |------|-----------|-------|-----------|
-| **VarNova 0.1** | **0.8 s** | **111,315 v/s** | — |
+| **VarNova 0.1** | **0.8 s** | **111,315 v/s** | - |
 | ANNOVAR 2020 | 7.3 s | 12,198 v/s | 9.1× slower |
 | SnpEff 5.2a | 53.6 s | 1,661 v/s | 67× slower |
 | VEP 115.2 | 69.5 s | 1,281 v/s | 87× slower |
 
-### Tier 2 — Full Pipeline (gene + gnomAD + ClinVar + dbSNP)
+### Tier 2 - Full Pipeline (gene + gnomAD + ClinVar + dbSNP)
 
 | Tool | Wall Time | Speed | Output Variants | vs VarNova |
 |------|-----------|-------|----------------|-----------|
-| **VarNova 0.1** | **18.9 s** | **4,711 v/s** | **90,188** | — |
+| **VarNova 0.1** | **18.9 s** | **4,711 v/s** | **90,188** | - |
 | ANNOVAR 2020 | 263.8 s | 337 v/s | 90,188 | **14× slower** |
 | VEP 115.2 | 202.4 s | 439 v/s | 89,052 | **10.7× slower** |
-| SnpEff 5.2a | 1,619 s | 54 v/s | — | **86× slower** |
+| SnpEff 5.2a | 1,619 s | 54 v/s | - | **86× slower** |
 
 **Input:** 89,052 variants (GATK HaplotypeCaller, exome, hg38)  
 **Databases:** gnomAD 4.1 exome (18 GB) + ClinVar 2024 (1 GB) + dbSNP 151 (29 GB)  
@@ -60,10 +60,10 @@ mv varnova ~/.local/bin/ && chmod +x ~/.local/bin/varnova
 export PATH="$HOME/.local/bin:$PATH"
 varnova --version
 
-# 3. Generate test VCF (1000 synthetic variants — no real data needed)
+# 3. Generate test VCF (1000 synthetic variants - no real data needed)
 python3 scripts/generate_test_vcf.py --output testdata/test.vcf --variants 1000
 
-# 4. Edit config.sh — set DB= to your humandb/ directory
+# 4. Edit config.sh - set DB = to your humandb/ directory
 cp config.sh my_config.sh
 # nano my_config.sh
 
@@ -154,11 +154,11 @@ varnova table \
 
 This benchmark is designed to be **fair and reproducible**:
 
-1. **Same databases** — all tools use identical data (gnomAD 4.1 + ClinVar 2024 + dbSNP 151)
-2. **Same input VCF** — identical variants for all tools
-3. **Same hardware** — all tools run on the same machine in the same session
-4. **Cold cache** — first-run timing (OS page cache flushed between runs)
-5. **Output verification** — variant counts verified across tools (VarNova = ANNOVAR = 90,188)
+1. **Same databases** - all tools use identical data (gnomAD 4.1 + ClinVar 2024 + dbSNP 151)
+2. **Same input VCF** - identical variants for all tools
+3. **Same hardware** - all tools run on the same machine in the same session
+4. **Cold cache** - first-run timing (OS page cache flushed between runs)
+5. **Output verification** - variant counts verified across tools (VarNova = ANNOVAR = 90,188)
 
 ---
 
@@ -189,4 +189,4 @@ Run the benchmark on your hardware and share results:
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT - see [LICENSE](LICENSE)
