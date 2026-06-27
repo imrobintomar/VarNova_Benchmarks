@@ -138,7 +138,7 @@ The exact hardware and commands used:
 - **ANNOVAR/VEP/SnpEff databases:** standard format on HDD
 
 ```bash
-# VarNova (as benchmarked)
+# VarNova
 varnova table \
   -i sample_89052variants_hg38.vcf \
   --gene-db humandb/hg38_refGene.txt \
@@ -174,19 +174,3 @@ Run the benchmark on your hardware and share results:
 
 ---
 
-## Citation
-
-```bibtex
-@article{varnova2026,
-  title   = {VarNova: a high-performance genomic variant annotator},
-  author  = {Robin Tomar},
-  year    = {2026},
-  note    = {manuscript in preparation}
-}
-```
-
----
-
-## License
-
-MIT - see [LICENSE](LICENSE)
